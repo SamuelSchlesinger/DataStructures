@@ -63,3 +63,10 @@ balance Black a x (RBNode Red b y (RBNode Red c z d))
   = template a b c d x y z 
 
 balance color a x b = RBNode color a x b
+
+test :: Integer -> Bool
+test n = let tree = foldl (insert) empty [(x, x + 5) | x <- [1..n]] in
+           let results = map (\x -> case (get tree x) of
+                                        Nothing -> False
+                                        Just x' -> x == x' - 5) [1..n] in
+               foldl (&&) True results
