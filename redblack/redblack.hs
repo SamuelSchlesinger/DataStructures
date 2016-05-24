@@ -1,5 +1,7 @@
 {-# LANGUAGE GADTs #-}
 
+module RBTree (RBTree(..), empty, depth, get, insert) where
+
 -- Red black tree based on Chris Okasaki's paper:
 -- Red-Black Trees in a Functional Setting
 -- (https://wiki.rice.edu/confluence/download/attachments/2761212/Okasaki-Red-Black.pdf)
@@ -8,7 +10,7 @@ data Color = Red | Black deriving (Show)
 
 data RBTree key val where
      RBNil  :: RBTree key val
-     RBNode :: (Ord key, Ord val) =>  
+     RBNode :: (Ord key) =>  
                 Color -> RBTree key val -> (key, val) -> RBTree key val -> RBTree key val
 
 instance (Show key, Show val) => Show (RBTree key val) where
@@ -36,7 +38,7 @@ get (RBNode _ left (key, val) right) key'
     | key == key' = Just val
     | key < key'  = get right key'
 
-insert :: (Ord key, Ord val) => RBTree key val -> (key, val) -> RBTree key val
+insert :: (Ord key) => RBTree key val -> (key, val) -> RBTree key val
 insert tree (key, val) = makeBlack (insert' tree) where
     makeBlack (RBNode _ left (key, val) right) = RBNode Black left (key, val) right
     insert' RBNil = RBNode Red RBNil (key, val) RBNil
@@ -65,6 +67,9 @@ balance Black a x (RBNode Red b y (RBNode Red c z d))
 balance color a x b = RBNode color a x b
 
 test :: Integer -> Bool
+
+test_tree n = foldl insert empty [(x, x) | x <- [1..n]]
+
 test n = let tree = foldl (insert) empty [(x, x + 5) | x <- [1..n]] in
            let results = map (\x -> case (get tree x) of
                                         Nothing -> False
