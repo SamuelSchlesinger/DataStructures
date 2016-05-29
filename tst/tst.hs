@@ -1,8 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-
-
 import Data.Binary
 import GHC.Generics (Generic)
 
@@ -21,11 +19,11 @@ snag :: (Ord c) => T c v -> [c] -> Maybe v
 
 insert _ ([], _) = E -- if you're trying to insert the empty list you suck
 
-insert E ((c:[]), v) = N E E (c, (Just v)) E 
+insert E ([c], v) = N E E (c, (Just v)) E 
 
 insert E ((c:cs), v) = N E (insert E (cs, v)) (c, Nothing) E
 
-insert (N l d (c', v') r) (s@(c:[]), v)
+insert (N l d (c', v') r) (s@([c]), v)
   | c <  c' = (N (insert l (s, v)) d (c', v') r) -- go left
   | c == c' = (N l d (c, (Just v)) r) -- slap 'er down
   | c >  c' = (N l d (c', v') (insert r (s, v))) -- go right
@@ -39,7 +37,7 @@ snag _ [] = Nothing -- wat is nun?
 
 snag E _  = Nothing -- heh?
 
-snag (N l d (c', v') r) s@(c:[])
+snag (N l d (c', v') r) s@([c])
   | c <  c' = snag l s -- go left
   | c == c' = v' -- return dat thang
   | c >  c' = snag r s -- go right
