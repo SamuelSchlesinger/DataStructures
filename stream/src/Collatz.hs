@@ -18,3 +18,4 @@ maxAndIndex (a:as) = maxAndIndex' (a, 1) 2 as where
 main = do
     [lim] <- getArgs
     putStrLn $ show $ maxAndIndex $ take (read lim) $ collatzNumbers
+    putStrLn $ show (maxAndIndex (take 100000000 collatzNumbers))

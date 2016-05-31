@@ -8,6 +8,7 @@ module Stream (
   , take ) where
 
 import Prelude hiding (iterate, take)
+import Control.Parallel.Strategies
 
 -- | An infinite stream
 data Stream a = Stream a (Stream a)
@@ -17,6 +18,9 @@ instance (Show a) => Show (Stream a) where
 
 instance Functor Stream where
     fmap f (Stream a s) = Stream (f a) (fmap f s)
+    fmap f (Stream a s) = runEval $ do
+        fa <- rpar (f a)
+        return (Stream fa (fmap f s))
 
 -- | A stream consisting of a single element repeated ad infinitum
 element :: a -> Stream a
