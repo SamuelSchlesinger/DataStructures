@@ -1,13 +1,14 @@
 module Stream ( 
     Stream(..)
-  , element
+  , forever
   , pop
   , push 
   , iterate
-  , lengthUntil
-  , take ) where
+  , take
+  , takeWhile ) where
 
-import Prelude hiding (iterate, take)
+import Prelude hiding (iterate, take, takeWhile)
+import Control.Comonad
 import Control.Parallel.Strategies
 
 -- | An infinite stream
@@ -18,13 +19,24 @@ instance (Show a) => Show (Stream a) where
 
 instance Functor Stream where
     fmap f (Stream a s) = Stream (f a) (fmap f s)
-    fmap f (Stream a s) = runEval $ do
-        fa <- rpar (f a)
-        return (Stream fa (fmap f s))
+
+instance Applicative Stream where
+    pure = forever
+    (Stream f fs) <*> (Stream a as) = (Stream (f a) (fs <*> as))
+
+-- | Extract takes the first element
+-- | Duplicate makes a corner out of a strip
+instance Comonad Stream where
+    extract (Stream a _) = a
+    duplicate (Stream a s) = Stream (Stream a s) (duplicate s)
+
+-- | fmap specialised to Stream
+smap :: (a -> b) -> Stream a -> Stream b
+smap f (Stream a s) = Stream (f a) (smap f s)
 
 -- | A stream consisting of a single element repeated ad infinitum
-element :: a -> Stream a
-element a = Stream a (element a)
+forever :: a -> Stream a
+forever a = Stream a (forever a)
 
 -- | Pops a single element from the stream. 
 pop :: Stream a -> (a, Stream a)
@@ -33,22 +45,19 @@ pop (Stream a s) = (a, s)
 -- | Pushes a single element to the stream.
 push :: (a, Stream a) -> Stream a
 push (a, s) = Stream a s
--- ^ push (fst (pop s), snd (pop s)) == pop (push (a, s))
+-- ^ push . pop == id
+-- ^ pop . push == id
 
 -- | Iterates the value through the function ad infinitum
-iterate :: a -> (a -> a) -> Stream a
-iterate a f = Stream a (iterate (f a) f)
+iterate :: (a -> a) -> a -> Stream a
+iterate f a = Stream a (iterate f (f a))
+
+-- | Take elements out of the stream while some predicate is True
+takeWhile :: (a -> Bool) -> Stream a -> [a]
+takeWhile p (Stream a s) | p a = a : (takeWhile p s)
+                         | otherwise = []
 
 -- | Takes a number of elements from the stream
 take :: Integer -> Stream a -> [a]
 take n (Stream a s) | n <= 0 = [] 
                     | otherwise = a : (take (n - 1) s)
-
--- | Gives the length until the stream contains a certain element
-lengthUntil :: (Eq a) => a -> Stream a -> Integer
-lengthUntil a s = lengthUntil' 0 a s where 
-    lengthUntil' :: (Eq a) => Integer -> a -> Stream a -> Integer
-    lengthUntil' n a (Stream a' s) | a == a' = n
-                                   | otherwise = lengthUntil' (n + 1) a s
-
-
